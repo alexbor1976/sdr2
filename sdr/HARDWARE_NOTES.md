@@ -1,36 +1,7 @@
 # Hardware notes — ADRV9364-Z7020 on ADRV1CRR-BOB
 
-> Based on `https://github.com/alexbor1976/spectrumAnalyzerTutorial` (original project). See its README for the phase-by-phase build log this one grew out of.
-
 Board-specific truths that are not in any generic tutorial, and that no AI model
 reliably knows. Keep this file updated; it is the most valuable thing in the repo.
-
----
-
-## Current RF configuration (read this before anything else)
-
-**This is no longer an empty-SMA-ports setup.** Earlier notes below (and any
-old chat history) that assume "both ports empty, digital loopback only" are
-**stale** — antennas are now physically connected:
-
-| Port | Antenna |
-|---|---|
-| RXA | Molex 105263 Series Flexible Cellular 6-Band Antenna |
-| TXA | Siretta Delta 2 Series Right-Angle Stubby Antenna |
-
-Consequences:
-
-- `loopback_rf_cable.py`-style tests now radiate for real — this is **not** a
-  bench-safe digital-only setup anymore. Treat every TX buffer as a real
-  transmission.
-- `siggen.py` generator frequency has been changed from the tutorial's
-  100 MHz to **433 MHz** (checked for legal use in this band/region). If you
-  copy code from the original project, check every hardcoded `TX_LO` /
-  `CENTER` — the old files default to 100 MHz.
-- Keep `tx_hardwaregain_chan0` conservative (large negative = more
-  attenuation) until you've measured actual radiated power. The "-89, always
-  attenuate on exit" habit from the original scripts still applies here — if
-  anything, it matters *more* now that there's a real antenna to radiate from.
 
 ---
 
