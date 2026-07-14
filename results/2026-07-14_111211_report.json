@@ -1,0 +1,18 @@
+{
+  "run_id": "2026-07-14_111211",
+  "uri": "ip:192.168.1.50",
+  "sample_rate_hz": 4000000,
+  "rx_lo_hz": 100000000,
+  "rx_buffer_size": 1024,
+  "rx_hardwaregain_db": 40,
+  "peak": 99.36297097007517,
+  "num_samples": 1024,
+  "dtype": "complex128",
+  "first_4_samples": [
+    "(28-22j)",
+    "(-18+7j)",
+    "(-11+23j)",
+    "(11+41j)"
+  ],
+  "samples_file": "results/2026-07-14_111211_samples.npy"
+}

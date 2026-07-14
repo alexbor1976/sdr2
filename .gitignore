@@ -6,3 +6,4 @@ venv/
 *.bin
 *.png
 captures/
+results/*.npy
