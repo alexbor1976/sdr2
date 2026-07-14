@@ -4,8 +4,9 @@ LinkChecker.py -- run this on the LAPTOP (not the board), via main.py.
 Class-based rewrite of the original link_check.py from the
 spectrumAnalyzerTutorial project (RX-only "does the whole chain work?"
 smoke test). Reads its configuration directly from the shared Settings
-class (Settings.py) -- it is never handed a settings object; it just
-imports Settings and reads Settings.whatever wherever it needs a value.
+class (Settings.py, one folder up, at the project root) -- it is never
+handed a settings object; it just imports Settings and reads
+Settings.whatever wherever it needs a value.
 
 Proves: laptop -> Ethernet -> iiod -> ad9361/ad9364 driver -> FPGA DMA
 -> Python. Safe to run with antennas connected: RX-only, never transmits.
@@ -20,6 +21,7 @@ import numpy as np        # numerical arrays -- sdr.rx() hands us samples as a n
 import adi                # pyadi-iio: the friendly Python wrapper around libiio
 
 from Settings import Settings   # the shared, class-level settings -- read directly, never passed in
+                                  # (main.py adds the project root to sys.path so this import works)
 
 
 class LinkChecker:
@@ -123,7 +125,9 @@ class LinkChecker:
         a later script -- or pasted into an AI chat -- as real ground truth
         instead of a re-typed description.
 
-        Writes two files into Settings.results_dir:
+        Writes two files into Settings.results_dir (relative to wherever you
+        launched Python from -- run main.py from inside LinkChecker/ to keep
+        these next to this script, see LinkChecker.md):
           - <run_id>_samples.npy  -- the full raw complex sample buffer
           - <run_id>_report.json  -- settings used + a small summary (peak,
             first few samples, timestamp): easy to open, read, or paste.
@@ -176,4 +180,8 @@ class LinkChecker:
 if __name__ == "__main__":
     # Lets you still run `python LinkChecker.py` directly, using whatever
     # values are currently set in Settings.py, without needing main.py.
+    # Note: this direct-run path does NOT get main.py's sys.path fix, so it
+    # only works if Settings.py happens to be importable already (e.g. you
+    # ran it from the project root with the root on PYTHONPATH). Prefer
+    # `python main.py` from inside this folder.
     LinkChecker().run()

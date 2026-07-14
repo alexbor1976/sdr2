@@ -2,7 +2,8 @@
 
 > Paste this whole file into a fresh AI chat at the start of a session. It's
 > the one thing that needs to be current — everything here is facts, not
-> a tutorial. For a running diary of experiments, see `NOTES.md`.
+> a tutorial. For a running diary of experiments, see `LAB.md`. `NOTES.md`
+> is a personal scratchpad — not usually worth pasting into a fresh chat.
 
 > Based on `sdr` (original project) — reorganized into `sdr2`'s own file
 > layout. See the original project's README for the phase-by-phase build log
@@ -21,13 +22,13 @@ on (laptop or board). That single fact is the #1 source of wrong answers.
 ## Status
 
 - **Phase 1 (network + link check): DONE, verified 2026-07-14.** Run via
-  `python main.py` on the laptop (see `LinkChecker.py` / `Settings.py`).
+  `cd LinkChecker && python main.py` on the laptop (see `LinkChecker/`).
   Result: connected cleanly, `peak = 99.36` (sane range), full details in
-  `results/2026-07-14_111211_report.json` and the matching `_samples.npy`.
-  An offline FFT of that capture also shows a strong, narrow tone ≈99.0 MHz
-  (≈996 kHz below the 100 MHz LO) — good independent evidence the RXA
-  antenna is genuinely receiving real off-air signal, not just noise. See
-  `NOTES.md` for the full row.
+  `LinkChecker/results/2026-07-14_111211_report.json` and the matching
+  `_samples.npy`. An offline FFT of that capture also shows a strong,
+  narrow tone ≈99.0 MHz (≈996 kHz below the 100 MHz LO) — good independent
+  evidence the RXA antenna is genuinely receiving real off-air signal, not
+  just noise. See `LAB.md` for the full row.
 - Phases 2+ (live spectrum plot, signal generation, RF cable loopback,
   board-side PSD, FPGA work): not started yet.
 
@@ -180,26 +181,47 @@ else will work until that's fixed.
   new scripts (e.g. a future `SpectrumLive` class).
 - **Each script gets a matching `.md`** (e.g. `LinkChecker.md`) documenting
   what it does, how to run it, and how to test it empirically.
+- **Each script lives in its own subfolder** (e.g. `LinkChecker/`), holding
+  that script's `.py`, its `.md`, and its own `results/`. `Settings.py`
+  is the one exception — it stays at the project root since it's shared by
+  every script's folder, not owned by any single one. A script's `main.py`
+  is responsible for making the root importable (see `LinkChecker/main.py`'s
+  `sys.path` bootstrap) so this works regardless of where you launch it from.
+  **Always `cd` into a script's own folder before running it** — `results/`
+  is a relative path, and doing this keeps each script's output next to
+  itself instead of scattered into wherever you happened to launch Python.
+- **Two separate log files, different purposes:** `LAB.md` is the
+  structured, append-only project log (one row per experiment — never
+  edited after the fact). `NOTES.md` is a personal, free-form scratchpad
+  (ideas, reminders, half-formed questions) — fine to edit or delete
+  entries in.
 
 ---
 
 ## Repo layout
 
-`sdr2` reorganizes the original project's files into its own structure.
-Current state:
+`sdr2` reorganizes the original project's files into its own structure, one
+subfolder per script. Current state:
 
 ```
-CONTEXT.md          ← this file
-NOTES.md             ← experiment log (one row per run)
-HARDWARE_NOTES.md     ← board quirks: LED / GPIO 963 device-tree bug, loopback modes
-Settings.py            ← shared config, class attributes only (Settings.rx_lo, ...)
-LinkChecker.py           ← Phase 1: class-based link check
-LinkChecker.md            ← how to run/test LinkChecker, what its saved results contain
-main.py                    ← entry point; overrides Settings if needed, runs LinkChecker
-results/                    ← auto-saved per run: <run_id>_report.json + <run_id>_samples.npy
+CONTEXT.md              ← this file
+LAB.md                   ← project-wide experiment log (one row per run, append-only)
+NOTES.md                  ← personal scratchpad (ideas, reminders — not structured)
+HARDWARE_NOTES.md          ← board quirks: LED / GPIO 963 device-tree bug, loopback modes
+Settings.py                 ← SHARED config, class attributes only (Settings.rx_lo, ...)
+                               used by every script's folder below
+LinkChecker/                  ← Phase 1: link check
+├── LinkChecker.py              ← the class
+├── main.py                      ← entry point (run this, from inside this folder)
+├── LinkChecker.md                 ← how to run/test it, what its results contain
+└── results/                        ← auto-saved per run
+    ├── summarize.py                  ← prints a one-line-per-run table across all reports
+    ├── <run_id>_report.json
+    └── <run_id>_samples.npy
 ```
 
-Still to design/port from the original project (Phases 2–7):
+Still to design/port from the original project (Phases 2–7), each expected
+to get its own subfolder the same way `LinkChecker/` does:
 `spectrum_live.py`, `siggen.py`, `loopback_rf_cable.py`, `board_psd_server.py`,
 `laptop_psd_client.py`, `scripts/led_init.sh`, `scripts/led.py`.
 
@@ -221,4 +243,7 @@ Still to design/port from the original project (Phases 2–7):
 - **Ground truth beats memory.** API names, GPIO numbers, register names and
   file paths drift between library/board versions — verify against the board,
   don't trust a remembered answer. Prefer pasting an actual
-  `results/*_report.json` over describing a result from memory.
+  `<script>/results/*_report.json` over describing a result from memory.
+- **Paste `LAB.md`, not `NOTES.md`, when asking for help on a specific bug.**
+  `LAB.md` has the structured expected-vs-observed rows an AI can reason
+  about; `NOTES.md` is personal and unstructured.

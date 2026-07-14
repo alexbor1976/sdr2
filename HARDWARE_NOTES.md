@@ -1,9 +1,13 @@
 # Hardware notes — ADRV9364-Z7020 on ADRV1CRR-BOB
 
 > Based on `https://github.com/alexbor1976/spectrumAnalyzerTutorial` (original project). See its README for the phase-by-phase build log this one grew out of.
+>
+> See also: `CONTEXT.md` for current project status and repo layout,
+> `LAB.md` for the full experiment log these findings are drawn from.
 
-Board-specific truths that are not in any generic tutorial, and that no AI model
-reliably knows. Keep this file updated; it is the most valuable thing in the repo.
+Board-specific truths that are not in any generic tutorial, and that no AI
+model reliably knows. Keep this file updated; it is the most valuable thing
+in the repo.
 
 ---
 
@@ -18,6 +22,13 @@ old chat history) that assume "both ports empty, digital loopback only" are
 | RXA | Molex 105263 Series Flexible Cellular 6-Band Antenna |
 | TXA | Siretta Delta 2 Series Right-Angle Stubby Antenna |
 
+**Confirmed, not just theoretical:** a 2026-07-14 `LinkChecker` run at
+`rx_lo = 100 MHz` captured a real signal — an FFT of the saved buffer shows
+a strong, narrow tone ≈99.0 MHz (~24× the noise floor), consistent with an
+FM broadcast station coming in on the Molex antenna. See `LAB.md` for the
+full row. This is direct evidence the antenna is live and receiving, not
+just physically present.
+
 Consequences:
 
 - `loopback_rf_cable.py`-style tests now radiate for real — this is **not** a
@@ -30,7 +41,9 @@ Consequences:
 - Keep `tx_hardwaregain_chan0` conservative (large negative = more
   attenuation) until you've measured actual radiated power. The "-89, always
   attenuate on exit" habit from the original scripts still applies here — if
-  anything, it matters *more* now that there's a real antenna to radiate from.
+  anything, it matters *more* now that there's a real antenna to radiate
+  from, and now that RX has confirmed the antenna genuinely couples to the
+  outside world in the first place.
 
 ---
 
@@ -86,8 +99,10 @@ echo 0 > /sys/class/gpio/gpio963/value    # OFF
 
 All of the above requires root.
 
-Packaged as [`scripts/led_init.sh`](../scripts/led_init.sh) (run on the board)
-and [`scripts/led.py`](../scripts/led.py) (drive it from the laptop over SSH).
+Packaged as [`scripts/led_init.sh`](scripts/led_init.sh) (run on the board)
+and [`scripts/led.py`](scripts/led.py) (drive it from the laptop over SSH).
+*(Paths updated for the current flat repo layout — see `CONTEXT.md`'s Repo
+Layout section. Not yet created as of 2026-07-14.)*
 
 ### To make it survive reboots
 
@@ -141,6 +156,9 @@ If it holds, two things follow:
 base=            label=            ngpio=
 → 963 is MIO / EMIO pin ___
 ```
+
+*(Still unverified as of 2026-07-14 — not run yet. Tracked as an open
+question in `LAB.md` too.)*
 
 ---
 
@@ -202,6 +220,7 @@ Stop and fix that; nothing else will work.
 | Ethernet ceiling | ~5 MS/s continuous (`5e6 × 2 × 2 B` ≈ 160 Mbit/s) |
 | IIO network port | TCP 30431 |
 | Kuiper default login | `analog` / `analog` |
+| RX sample dtype (observed) | `complex128` in practice on this board/library combo — **do not assume `complex64`**, see log below |
 
 ---
 
@@ -212,4 +231,5 @@ the single most useful thing to paste into an AI chat when stuck.
 
 | Date | Symptom | Cause | Fix |
 |---|---|---|---|
+| 2026-07-14 | Captured buffer's `dtype` was `complex128`, not the `complex64` assumed in early draft docs/scripts | Not actually investigated — just observed on this pyadi-iio/libiio 0.25 combo. Possibly a version/library default, not a hardware fact. | No fix needed — code that hardcodes `complex64` (e.g. for FFT sizing or memory pre-allocation) will misbehave. Always read `x.dtype` off the actual captured array instead of assuming. |
 | | | | |

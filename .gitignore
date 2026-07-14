@@ -7,3 +7,4 @@ venv/
 *.png
 captures/
 results/*.npy
+LinkChecker/results/*.npy
