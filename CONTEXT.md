@@ -2,7 +2,7 @@
 
 > Paste this whole file into a fresh AI chat at the start of a session. It's
 > the one thing that needs to be current — everything here is facts, not
-> a tutorial. For a running diary of experiments, see `LOG.md`.
+> a tutorial. For a running diary of experiments, see `NOTES.md`.
 
 > Based on `sdr` (original project) — reorganized into `sdr2`'s own file
 > layout. See the original project's README for the phase-by-phase build log
@@ -15,6 +15,21 @@
 A remote spectrum analyzer / signal generator. Beginner level — explain
 things simply, and always say which machine a command or piece of code runs
 on (laptop or board). That single fact is the #1 source of wrong answers.
+
+---
+
+## Status
+
+- **Phase 1 (network + link check): DONE, verified 2026-07-14.** Run via
+  `python main.py` on the laptop (see `LinkChecker.py` / `Settings.py`).
+  Result: connected cleanly, `peak = 99.36` (sane range), full details in
+  `results/2026-07-14_111211_report.json` and the matching `_samples.npy`.
+  An offline FFT of that capture also shows a strong, narrow tone ≈99.0 MHz
+  (≈996 kHz below the 100 MHz LO) — good independent evidence the RXA
+  antenna is genuinely receiving real off-air signal, not just noise. See
+  `NOTES.md` for the full row.
+- Phases 2+ (live spectrum plot, signal generation, RF cable loopback,
+  board-side PSD, FPGA work): not started yet.
 
 ---
 
@@ -64,6 +79,8 @@ Consequences:
   attenuation, range roughly −89.75 … 0 dB) until actual radiated power has
   been measured. Do not suggest connecting a different antenna or increasing
   power without discussing it first.
+- RX-only tests (like the Phase 1 link check above, run at `rx_lo = 100 MHz`)
+  are always safe regardless of antenna state, since nothing is transmitted.
 
 ---
 
@@ -127,6 +144,7 @@ else will work until that's fixed.
 | `rx_hardwaregain_chan0` | gain in dB, roughly −3 … 71 (band-dependent) |
 | Analog filter corner | ~80% of sample rate — distrust the outer 20% |
 | Ethernet ceiling | ~5 MS/s continuous (`5e6 × 2 × 2 B` ≈ 160 Mbit/s) |
+| RX sample dtype (observed) | `complex128` in practice on this setup — don't assume `complex64` |
 
 ---
 
@@ -144,17 +162,46 @@ else will work until that's fixed.
 
 ---
 
+## Conventions established so far
+
+- **Settings pattern:** all tunable values live in `Settings.py` as class
+  attributes (`Settings.rx_lo`), never instantiated. Scripts import the
+  class and read/override directly, e.g. `Settings.rx_lo = int(200e6)` in
+  `main.py` before running. No constructor arguments — deliberate, so it
+  scales to many settings without an unreadable constructor signature.
+- **Each script that talks to the radio is a class** (e.g. `LinkChecker`)
+  with one method per logical step, plus a `run()` that calls them in
+  order. A thin `main.py` overrides `Settings` if needed and instantiates
+  the class.
+- **Every run saves ground truth to disk automatically**: a
+  `save_report()`-style method writes `results/<timestamp>_report.json`
+  (settings + key results — small, safe to paste into an AI chat) and
+  `results/<timestamp>_samples.npy` (raw data). Follow this pattern for
+  new scripts (e.g. a future `SpectrumLive` class).
+- **Each script gets a matching `.md`** (e.g. `LinkChecker.md`) documenting
+  what it does, how to run it, and how to test it empirically.
+
+---
+
 ## Repo layout
 
-`sdr2` reorganizes the original project's files into its own structure —
-**not yet finalized**. This section should be filled in and kept current as
-code is recreated/ported from the original project. Suggested minimum:
+`sdr2` reorganizes the original project's files into its own structure.
+Current state:
 
 ```
-CONTEXT.md   ← this file
-LOG.md       ← optional running lab notebook (add only if it earns its keep)
-<code files, structure TBD>
+CONTEXT.md          ← this file
+NOTES.md             ← experiment log (one row per run)
+HARDWARE_NOTES.md     ← board quirks: LED / GPIO 963 device-tree bug, loopback modes
+Settings.py            ← shared config, class attributes only (Settings.rx_lo, ...)
+LinkChecker.py           ← Phase 1: class-based link check
+LinkChecker.md            ← how to run/test LinkChecker, what its saved results contain
+main.py                    ← entry point; overrides Settings if needed, runs LinkChecker
+results/                    ← auto-saved per run: <run_id>_report.json + <run_id>_samples.npy
 ```
+
+Still to design/port from the original project (Phases 2–7):
+`spectrum_live.py`, `siggen.py`, `loopback_rf_cable.py`, `board_psd_server.py`,
+`laptop_psd_client.py`, `scripts/led_init.sh`, `scripts/led.py`.
 
 ---
 
@@ -173,4 +220,5 @@ LOG.md       ← optional running lab notebook (add only if it earns its keep)
   not a single confident guess.
 - **Ground truth beats memory.** API names, GPIO numbers, register names and
   file paths drift between library/board versions — verify against the board,
-  don't trust a remembered answer.
+  don't trust a remembered answer. Prefer pasting an actual
+  `results/*_report.json` over describing a result from memory.
